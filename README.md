@@ -630,10 +630,6 @@ Data_wrangling = payment_report.merge(product, on='product_id', how='left')
 Data_wrangling.head()
 ```
 
-Insight:
-- Left join keeps every payment row, so volumes without a product mapping are not lost (their `category` and `team_own` are NaN).
-- This table is built from `payment_report` before the duplicate groupby (919 rows). Totals are not affected, because the duplicate keys are summed anyway.
-
 Result:
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
@@ -644,16 +640,15 @@ Result:
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
 
+Insight:
+- Left join keeps every payment row, so volumes without a product mapping are not lost (their `category` and `team_own` are NaN).
+- This table is built from `payment_report` before the duplicate groupby (919 rows). Totals are not affected, because the duplicate keys are summed anyway.
+
 ### 🔥 1. Top 3 product_id with the highest volume
 
 ```python
 Data_wrangling.groupby('product_id')['volume'].sum().sort_values(ascending=False).head(3)
 ```
-
-Insight:
-- The top 3 products hold about half of the total volume (about 90.2B of roughly 181.8B).
-- Product 1976 alone is about 34% of total volume and 4.2 times the second product.
-- Product 1976 has only refund rows and no team in `product.csv`. The ranking mixes payment and refund volume, so the top product is a refund product, not a best-selling product. A ranking of payment volume only would be a better measure of product performance.
 
 Result:
 
@@ -662,6 +657,11 @@ Result:
 | 1976 | 61,797,583,647 |
 | 429 | 14,667,676,567 |
 | 372 | 13,713,658,515 |
+
+Insight:
+- The top 3 products hold about half of the total volume (about 90.2B of roughly 181.8B).
+- Product 1976 alone is about 34% of total volume and 4.2 times the second product.
+- Product 1976 has only refund rows and no team in `product.csv`. The ranking mixes payment and refund volume, so the top product is a refund product, not a best-selling product. A ranking of payment volume only would be a better measure of product performance.
 
 ### 🔥 2. Given that 1 product_id is owned by only 1 team, are there any abnormal products against this rule?
 
@@ -674,8 +674,6 @@ Data_wrangling['product_team_own'] = (
 Data_wrangling.head()
 ```
 
-Insight: `product_team_own` counts the distinct teams of each product. The first rows all have 1, which follows the rule.
-
 Result:
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own | product_team_own |
@@ -686,17 +684,14 @@ Result:
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD | 1 |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD | 1 |
 
+Insight: `product_team_own` counts the distinct teams of each product. The first rows all have 1, which follows the rule.
+
 **Filter products that break the rule**
 
 ```python
 Non_Team = Data_wrangling[Data_wrangling['product_team_own'] != 1].reset_index()
 Non_Team.groupby('product_id')['team_own'].nunique()
 ```
-
-Insight:
-- No product is owned by two or more teams. This is expected, because `product_id` is unique in `product.csv`.
-- The abnormal products are 3, 1976 and 10033. Their count is 0 because they have no team at all (they are missing from `product.csv`), not because they have several teams.
-- These are the same rows replaced with 'Unknown' in EDA. The product table should be completed for them.
 
 Result:
 
@@ -706,6 +701,11 @@ Result:
 | 1976 | 0 |
 | 10033 | 0 |
 
+Insight:
+- No product is owned by two or more teams. This is expected, because `product_id` is unique in `product.csv`.
+- The abnormal products are 3, 1976 and 10033. Their count is 0 because they have no team at all (they are missing from `product.csv`), not because they have several teams.
+- These are the same rows replaced with 'Unknown' in EDA. The product table should be completed for them.
+
 ### 🔥 3. Find the team with the lowest performance since Q2.2023, and the category that contributes the least to that team
 
 ```python
@@ -714,16 +714,16 @@ Data_wrangling[Data_wrangling['report_month'] >= '2023-04-01'] \
     .sort_values(ascending=True).head(1)
 ```
 
-Insight:
-- The data ends in April 2023, so "since Q2.2023" covers a single month.
-- The smallest team-category combination is ASD / PXXXXXP at 300,000, a negligible amount next to the monthly volumes of other categories.
-- This query ranks team-category pairs. It does not first sum volume per team to find the weakest team, and rows with no team (`Unknown`) are excluded by the groupby. A team-level total is needed to confirm that ASD is the lowest team.
-
 Result:
 
 | team_own | category | volume |
 |---|---|---|
 | ASD | PXXXXXP | 300,000 |
+
+Insight:
+- The data ends in April 2023, so "since Q2.2023" covers a single month.
+- The smallest team-category combination is ASD / PXXXXXP at 300,000, a negligible amount next to the monthly volumes of other categories.
+- This query ranks team-category pairs. It does not first sum volume per team to find the weakest team, and rows with no team (`Unknown`) are excluded by the groupby. A team-level total is needed to confirm that ASD is the lowest team.
 
 ### 🔥 4. Contribution of source_ids to refund transactions
 
@@ -733,15 +733,15 @@ Data_wrangling[Data_wrangling['payment_group'] == 'refund'] \
     .sort_values(ascending=False).head(1)
 ```
 
-Insight:
-- Source 38 contributes the most refund volume, about 59% of the refund volume of product 1976 (source 37 about 15%, source 39 about 26%).
-- Refunds are concentrated in one source, which makes source 38 the first place to check for refund causes.
-
 Result:
 
 | source_id | volume |
 |---|---|
 | 38 | 36,527,454,759 |
+
+Insight:
+- Source 38 contributes the most refund volume, about 59% of the refund volume of product 1976 (source 37 about 15%, source 39 about 26%).
+- Refunds are concentrated in one source, which makes source 38 the first place to check for refund causes.
 
 ### 🔥 5. Define the type of each transaction
 
@@ -768,11 +768,6 @@ transactions['Type'] = transactions.apply(transaction_type, axis=1)
 transactions.head()
 ```
 
-Insight:
-- The conditions are checked from top to bottom, so the specific merchant rules must come before the "other merchant" rules. Reordering them would mislabel Bank Transfer, Withdraw and Top Up as Payment.
-- Only transType 2 and 8 are valid. Other codes (22 and 24 appear in the first rows) and the empty row become Invalid, about 11,400 of 159,689 rows (about 7%).
-- This step reads the raw file, so duplicate `transaction_id` rows and all `transStatus` values are included. Part 2 counts are therefore not limited to successful, de-duplicated transactions.
-
 Result:
 
 | | transaction_id | merchant_id | volume | transType | transStatus | sender_id | receiver_id | extra_info | timeStamp | Type |
@@ -782,6 +777,11 @@ Result:
 | 2 | 3001960110 | 7255 | 48605.0 | 22.0 | 1.0 | NaN | 10530940.0 | NaN | 1.682932e+12 | Invalid Transaction |
 | 3 | 3002680710 | 2270 | 1500000.0 | 2.0 | 1.0 | 10059206.0 | 59206.0 | NaN | 1.682932e+12 | Top Up Money Transaction |
 | 4 | 3002680713 | 2275 | 90000.0 | 2.0 | 1.0 | 10004711.0 | 4711.0 | NaN | 1.682932e+12 | Payment Transaction |
+
+Insight:
+- The conditions are checked from top to bottom, so the specific merchant rules must come before the "other merchant" rules. Reordering them would mislabel Bank Transfer, Withdraw and Top Up as Payment.
+- Only transType 2 and 8 are valid. Other codes (22 and 24 appear in the first rows) and the empty row become Invalid, about 11,400 of 159,689 rows (about 7%).
+- This step reads the raw file, so duplicate `transaction_id` rows and all `transStatus` values are included. Part 2 counts are therefore not limited to successful, de-duplicated transactions.
 
 ### 🔥 6. Number of transactions, volume, senders and receivers per type (excluding invalid)
 
@@ -794,14 +794,6 @@ transactions[transactions['Type'] != 'Invalid Transaction'].groupby('Type').agg(
 })
 ```
 
-Insight:
-- By count, Payment (35.5%), Transfer Money (31.5%) and Top Up (26.5%) make up 93% of valid transactions. By volume, Top Up leads with 37.2%, then Payment 22.7% and Bank Transfer 19.5%.
-- Average value per transaction differs a lot: Bank Transfer about 1.44M, Withdraw about 639K, Top Up about 362K, Payment about 165K, Transfer Money about 109K, Split Bill about 3.7K. Bank Transfer is only 3.5% of transactions but 19.5% of volume.
-- Top Up and Withdraw have the same number of distinct senders and receivers (28,411 and 4,051). This suggests users act on their own wallet in these two types. It is a hypothesis to verify by checking `sender_id` against `receiver_id`.
-- Split Bill is almost negligible (171 transactions, 0.002% of volume), so it has little influence on the business.
-- Payment has many more senders than receivers (37,092 vs 27,020), and Bank Transfer even more (4,338 vs 1,743), which means receivers are concentrated on fewer accounts.
-- `sender_id` and `receiver_id` are counted with NaN excluded here, because the raw file is re-read in this step.
-
 Result:
 
 | Type | transaction_id | volume | sender_id | receiver_id |
@@ -812,6 +804,14 @@ Result:
 | Top Up Money Transaction | 39284 | 1.422743e+10 | 28411 | 28411 |
 | Transfer Money Transaction | 46710 | 5.098194e+09 | 11853 | 8212 |
 | Withdraw Money Transaction | 4327 | 2.766309e+09 | 4051 | 4051 |
+
+Insight:
+- By count, Payment (35.5%), Transfer Money (31.5%) and Top Up (26.5%) make up 93% of valid transactions. By volume, Top Up leads with 37.2%, then Payment 22.7% and Bank Transfer 19.5%.
+- Average value per transaction differs a lot: Bank Transfer about 1.44M, Withdraw about 639K, Top Up about 362K, Payment about 165K, Transfer Money about 109K, Split Bill about 3.7K. Bank Transfer is only 3.5% of transactions but 19.5% of volume.
+- Top Up and Withdraw have the same number of distinct senders and receivers (28,411 and 4,051). This suggests users act on their own wallet in these two types. It is a hypothesis to verify by checking `sender_id` against `receiver_id`.
+- Split Bill is almost negligible (171 transactions, 0.002% of volume), so it has little influence on the business.
+- Payment has many more senders than receivers (37,092 vs 27,020), and Bank Transfer even more (4,338 vs 1,743), which means receivers are concentrated on fewer accounts.
+- `sender_id` and `receiver_id` are counted with NaN excluded here, because the raw file is re-read in this step.
 
 ## III. Conclusion
 
