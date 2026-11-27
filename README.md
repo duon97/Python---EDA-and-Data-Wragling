@@ -89,7 +89,7 @@ payment_report = pd.read_csv('payment_report.csv', encoding='utf-8')
 payment_report.head()
 ```
 
-Result: The first 5 rows load correctly, and `report_month` is still text (2023-01).
+Result: The first 5 rows load correctly, and `report_month` is still object (2023-01).
 
 | | report_month | payment_group | product_id | source_id | volume |
 |---|---|---|---|---|---|
