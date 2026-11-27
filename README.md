@@ -640,9 +640,6 @@ Result:
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
 
-Insight:
-- Left join keeps every payment row, so volumes without a product mapping are not lost (their `category` and `team_own` are NaN).
-- This table is built from `payment_report` before the duplicate groupby (919 rows). Totals are not affected, because the duplicate keys are summed anyway.
 
 ### 🔥 1. Top 3 product_id with the highest volume
 
