@@ -554,25 +554,6 @@ Result: Duplicate transactions are dropped, one row per `transaction_id`.
 
 ## 📌 Data Wrangling
 
-**Base table: payment report joined with product**
-
-```python
-Data_wrangling = payment_report.merge(product, on='product_id', how='left')
-Data_wrangling.head()
-```
-
-Result: Every payment row is kept and joined with its `category` and `team_own`.
-
-| | report_month | payment_group | product_id | source_id | volume | category | team_own |
-|---|---|---|---|---|---|---|---|
-| 0 | 2023-01-01 | payment | 12 | 45 | 624110375 | PXXXXXT | ASD |
-| 1 | 2023-01-01 | payment | 17 | 45 | 335715113 | PXXXXXB | ASD |
-| 2 | 2023-01-01 | payment | 18 | 45 | 737784466 | PXXXXXB | ASD |
-| 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD |
-| 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
-
-Note: built from `payment_report` before the duplicate groupby (919 rows). Totals are not affected, because the duplicate keys are summed anyway.
-
 ### 🔥 1. Top 3 product_id with the highest volume
 
 ```python
