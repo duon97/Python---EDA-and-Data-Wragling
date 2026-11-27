@@ -82,6 +82,8 @@ Tools: Python (pandas, numpy) in Google Colab.
 
 ### 1. Payment report
 
+**Read data**
+
 ```python
 payment_report = pd.read_csv('payment_report.csv', encoding='utf-8')
 payment_report.head()
@@ -99,7 +101,7 @@ Result:
 | 3 | 2023-01 | payment | 19 | 45 | 120963069 |
 | 4 | 2023-01 | payment | 20 | 45 | 319653158 |
 
-Check Dtype
+**Check Dtype**
 
 ```python
 payment_report.info()
@@ -124,6 +126,8 @@ Data columns (total 5 columns):
 dtypes: int64(3), object(2)
 ```
 
+**Convert Dtype**
+
 ```python
 payment_report['report_month'] = pd.to_datetime(payment_report['report_month'], format='%Y-%m')
 payment_report['payment_group'] = payment_report['payment_group'].astype('string')
@@ -145,7 +149,7 @@ Result:
 dtypes: datetime64[ns](1), int64(3), string(1)
 ```
 
-Check missing values
+**Check missing values**
 
 ```python
 payment_report.isnull().sum()
@@ -163,7 +167,7 @@ Result:
 | source_id | 0 |
 | volume | 0 |
 
-Check duplicate values
+**Check duplicate values**
 
 ```python
 duplicates_payment = payment_report[payment_report.duplicated(
@@ -185,6 +189,8 @@ Result:
 | 412 | 2023-02-01 | refund | 1976 | 39 | 910819764 |
 | 413 | 2023-02-01 | refund | 1976 | 39 | 2675894726 |
 
+**Handle duplicate values**
+
 ```python
 cleaning_payment = payment_report.groupby(
     ['report_month','payment_group','product_id','source_id'], as_index=False
@@ -204,7 +210,7 @@ Result:
 | 3 | 2023-01-01 | 19 | 120963069 | payment | 45 |
 | 4 | 2023-01-01 | 20 | 319653158 | payment | 45 |
 
-Check product_id = 1976 again after cleaning
+**Verify product_id = 1976 after cleaning**
 
 ```python
 cleaning_payment[cleaning_payment['product_id'] == 1976]
@@ -229,12 +235,14 @@ Result:
 | 912 | 2023-04-01 | 1976 | 13831708189 | refund | 38 |
 | 913 | 2023-04-01 | 1976 | 5585357614 | refund | 39 |
 
+**Final payment report**
+
 ```python
 final_payment_report = cleaning_payment[['report_month','payment_group','product_id','source_id','volume']]
 final_payment_report.head()
 ```
 
-Final payment report: original column order restored, 914 clean rows.
+Original column order restored, 914 clean rows.
 
 Result:
 
@@ -247,6 +255,8 @@ Result:
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 |
 
 ### 2. Product
+
+**Read data**
 
 ```python
 product = pd.read_csv('product.csv', encoding='utf-8')
@@ -264,6 +274,8 @@ Result:
 | 2 | 20 | PXXXXXB | ASD |
 | 3 | 287 | PXXXXXB | ASD |
 | 4 | 372 | PXXXXXB | ASD |
+
+**Check Dtype**
 
 ```python
 product.info()
@@ -286,6 +298,8 @@ Data columns (total 3 columns):
 dtypes: int64(1), object(2)
 ```
 
+**Convert Dtype**
+
 ```python
 product['category'] = product['category'].astype('string')
 product['team_own'] = product['team_own'].astype('string')
@@ -305,7 +319,7 @@ Result:
 dtypes: int64(1), string(2)
 ```
 
-Check missing values
+**Check missing values**
 
 ```python
 product.isnull().sum()
@@ -321,7 +335,7 @@ Result:
 | category | 0 |
 | team_own | 0 |
 
-Check duplicate values
+**Check duplicate values**
 
 ```python
 duplicates_product = product[product.duplicated(subset=['product_id'], keep=False)]
@@ -340,6 +354,8 @@ Index: []
 
 ### 3. Payment_enriched
 
+**Merge payment_report with product**
+
 ```python
 payment_enriched = final_payment_report.merge(product, on='product_id', how='left')
 payment_enriched.head()
@@ -356,6 +372,8 @@ Result:
 | 2 | 2023-01-01 | payment | 18 | 45 | 737784466 | PXXXXXB | ASD |
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
+
+**Check Dtype**
 
 ```python
 payment_enriched.info()
@@ -381,7 +399,7 @@ Data columns (total 7 columns):
 dtypes: datetime64[ns](1), int64(3), string(3)
 ```
 
-Check missing values
+**Check missing values**
 
 ```python
 payment_enriched.isnull().sum()
@@ -401,6 +419,8 @@ Result:
 | category | 17 |
 | team_own | 17 |
 
+**Inspect missing rows**
+
 ```python
 miss_payment_enriched = payment_enriched[payment_enriched['category'].isna() | payment_enriched['team_own'].isna()]
 miss_payment_enriched.head()
@@ -419,6 +439,8 @@ Result:
 | 194 | 2023-01-01 | refund | 1976 | 39 | 554668954 | NA | NA |
 | 405 | 2023-02-01 | payment | 10033 | 45 | 114050 | NA | NA |
 
+**Handle missing values**
+
 ```python
 cleaned_payment_enriched = payment_enriched.replace(np.nan, 'Unknown')
 cleaned_payment_enriched.tail()
@@ -436,7 +458,7 @@ Result:
 | 912 | 2023-04-01 | refund | 1976 | 38 | 13831708189 | Unknown | Unknown |
 | 913 | 2023-04-01 | refund | 1976 | 39 | 5585357614 | Unknown | Unknown |
 
-Check duplicate values
+**Check duplicate values**
 
 ```python
 duplicates_payment_enriched = cleaned_payment_enriched[cleaned_payment_enriched.duplicated(
@@ -454,13 +476,15 @@ Columns: [report_month, payment_group, product_id, source_id, volume, category, 
 Index: []
 ```
 
+**Final payment_enriched**
+
 ```python
 final_payment_enriched = cleaned_payment_enriched[
     ['report_month','payment_group','product_id','source_id','volume','category','team_own']]
 final_payment_enriched.head()
 ```
 
-Final payment_enriched: 914 rows, 7 columns, clean.
+914 rows, 7 columns, clean.
 
 Result:
 
@@ -473,6 +497,8 @@ Result:
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
 
 ### 4. Transactions
+
+**Read data**
 
 ```python
 transactions = pd.read_csv('transactions.csv', encoding='utf-8')
@@ -490,6 +516,8 @@ Result:
 | 2 | 3001960110 | 7255.0 | 48605.0 | 22.0 | 1.0 | NaN | 10530940.0 | NaN | 1.682932e+12 |
 | 3 | 3002680710 | 2270.0 | 1500000.0 | 2.0 | 1.0 | 10059206.0 | 59206.0 | NaN | 1.682932e+12 |
 | 4 | 3002680713 | 2275.0 | 90000.0 | 2.0 | 1.0 | 10004711.0 | 4711.0 | NaN | 1.682932e+12 |
+
+**Check Dtype and missing values**
 
 ```python
 transactions.info()
@@ -527,6 +555,8 @@ Data columns (total 9 columns):
 dtypes: float64(7), int64(1), object(1)
 ```
 
+**Convert Dtype and handle missing values**
+
 ```python
 transactions['sender_id'] = transactions['sender_id'].fillna(0).astype('int')
 transactions['receiver_id'] = transactions['receiver_id'].fillna(0).astype('int')
@@ -553,7 +583,7 @@ Result:
 dtypes: float64(5), int64(3), string(1)
 ```
 
-Check duplicate values
+**Check duplicate values**
 
 ```python
 dup_transaction = transactions[transactions.duplicated(subset=['transaction_id'], keep=False)]
@@ -571,6 +601,8 @@ Result:
 | 149738 | 3000871161 | 2270.0 | 50000.0 | 2.0 | 1.0 | 10009352 | 9352 | NA | 1.682989e+12 |
 | 149739 | 3000871161 | 2270.0 | 50000.0 | 2.0 | 1.0 | 10009352 | 9352 | NA | 1.682989e+12 |
 | 149752 | 3000687030 | 2250.0 | 165000.0 | 8.0 | 1.0 | 10074844 | 38548300 | NA | 1.682989e+12 |
+
+**Handle duplicate values**
 
 ```python
 no_dup_transactions = transactions.drop_duplicates(subset='transaction_id', ignore_index=False)
@@ -591,7 +623,7 @@ Result:
 
 ## 📌 Data Wrangling
 
-Base table: payment report joined with product.
+**Base table: payment report joined with product**
 
 ```python
 Data_wrangling = payment_report.merge(product, on='product_id', how='left')
@@ -633,6 +665,8 @@ Result:
 
 ### 🔥 2. Given that 1 product_id is owned by only 1 team, are there any abnormal products against this rule?
 
+**Count distinct teams per product**
+
 ```python
 Data_wrangling['product_team_own'] = (
     Data_wrangling.groupby(['product_id','source_id'])['team_own'].transform('nunique')
@@ -651,6 +685,8 @@ Result:
 | 2 | 2023-01-01 | payment | 18 | 45 | 737784466 | PXXXXXB | ASD | 1 |
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD | 1 |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD | 1 |
+
+**Filter products that break the rule**
 
 ```python
 Non_Team = Data_wrangling[Data_wrangling['product_team_own'] != 1].reset_index()
