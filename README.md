@@ -89,9 +89,7 @@ payment_report = pd.read_csv('payment_report.csv', encoding='utf-8')
 payment_report.head()
 ```
 
-Preview: one row per month, payment group, product and source. `report_month` is still text (2023-01).
-
-Result:
+Result: The first 5 rows load correctly, and `report_month` is still text (2023-01).
 
 | | report_month | payment_group | product_id | source_id | volume |
 |---|---|---|---|---|---|
@@ -107,11 +105,7 @@ Result:
 payment_report.info()
 ```
 
-919 rows, 5 columns.
-- `report_month` is object -> Action: convert to datetime
-- `payment_group` is object -> Action: convert to string
-
-Result:
+Result: 919 rows and 5 columns, `report_month` and `payment_group` are object -> Action: convert to datetime and string.
 
 ```
 RangeIndex: 919 entries, 0 to 918
@@ -134,9 +128,7 @@ payment_report['payment_group'] = payment_report['payment_group'].astype('string
 payment_report.info()
 ```
 
-Dtype is now correct -> Next step: No action
-
-Result:
+Result: Dtype is now correct -> Next step: No action.
 
 ```
  #   Column         Non-Null Count  Dtype
@@ -155,9 +147,7 @@ dtypes: datetime64[ns](1), int64(3), string(1)
 payment_report.isnull().sum()
 ```
 
-Missing: 0 in every column -> Next step: No action
-
-Result:
+Result: Missing: 0 in every column -> Next step: No action.
 
 | Column | Missing |
 |---|---|
@@ -175,11 +165,7 @@ duplicates_payment = payment_report[payment_report.duplicated(
 duplicates_payment.head()
 ```
 
-- The table has no primary key, so the combination `report_month + payment_group + product_id + source_id` is used as the key.
-- The same key repeats in the same month with different volumes (for example product 1976, source 39). `payment_report.duplicated()` over all columns returns 0, so these are not exact copies.
-- Next step: group by the key and sum `volume`.
-
-Result:
+Result: The table has no primary key, so `report_month + payment_group + product_id + source_id` is used as the key, and it repeats with different volumes (for example product 1976, source 39) while `duplicated()` over all columns returns 0 -> Next step: group by the key and sum `volume`.
 
 | | report_month | payment_group | product_id | source_id | volume |
 |---|---|---|---|---|---|
@@ -198,9 +184,7 @@ cleaning_payment = payment_report.groupby(
 cleaning_payment.head()
 ```
 
-Duplicate keys are merged and their volumes summed, 919 rows -> 914 rows.
-
-Result:
+Result: Duplicate keys are merged and their volumes summed, 919 rows -> 914 rows.
 
 | | report_month | product_id | volume | payment_group | source_id |
 |---|---|---|---|---|---|
@@ -216,9 +200,7 @@ Result:
 cleaning_payment[cleaning_payment['product_id'] == 1976]
 ```
 
-Each month now has exactly one row per source (37, 38, 39) -> duplicates resolved.
-
-Result:
+Result: Each month now has exactly one row per source (37, 38, 39) -> duplicates resolved.
 
 | | report_month | product_id | volume | payment_group | source_id |
 |---|---|---|---|---|---|
@@ -242,9 +224,7 @@ final_payment_report = cleaning_payment[['report_month','payment_group','product
 final_payment_report.head()
 ```
 
-Original column order restored, 914 clean rows.
-
-Result:
+Result: Original column order restored, 914 clean rows.
 
 | | report_month | payment_group | product_id | source_id | volume |
 |---|---|---|---|---|---|
@@ -263,9 +243,7 @@ product = pd.read_csv('product.csv', encoding='utf-8')
 product.head()
 ```
 
-Preview: each product belongs to one category and one team.
-
-Result:
+Result: The first 5 rows load correctly, each product belongs to one category and one team.
 
 | | product_id | category | team_own |
 |---|---|---|---|
@@ -281,11 +259,7 @@ Result:
 product.info()
 ```
 
-492 rows, 3 columns.
-- `category` is object -> Action: convert to string
-- `team_own` is object -> Action: convert to string
-
-Result:
+Result: 492 rows and 3 columns, `category` and `team_own` are object -> Action: convert to string.
 
 ```
 RangeIndex: 492 entries, 0 to 491
@@ -306,9 +280,7 @@ product['team_own'] = product['team_own'].astype('string')
 product.info()
 ```
 
-Dtype is now correct -> Next step: No action
-
-Result:
+Result: Dtype is now correct -> Next step: No action.
 
 ```
  #   Column      Non-Null Count  Dtype
@@ -325,9 +297,7 @@ dtypes: int64(1), string(2)
 product.isnull().sum()
 ```
 
-Missing: 0 in every column -> Next step: No action
-
-Result:
+Result: Missing: 0 in every column -> Next step: No action.
 
 | Column | Missing |
 |---|---|
@@ -342,9 +312,7 @@ duplicates_product = product[product.duplicated(subset=['product_id'], keep=Fals
 duplicates_product.head()
 ```
 
-Primary key `product_id` has no duplicate -> Next step: No action
-
-Result:
+Result: Primary key `product_id` has no duplicate -> Next step: No action.
 
 ```
 Empty DataFrame
@@ -361,9 +329,7 @@ payment_enriched = final_payment_report.merge(product, on='product_id', how='lef
 payment_enriched.head()
 ```
 
-Left join keeps all 914 payment rows and adds `category` and `team_own`.
-
-Result:
+Result: Left join keeps all 914 payment rows and adds `category` and `team_own`.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -379,10 +345,7 @@ Result:
 payment_enriched.info()
 ```
 
-1. Dtype is correct -> Next step: No action
-2. `category` and `team_own` have 897 non-null out of 914 rows -> missing values, check next
-
-Result:
+Result: Dtype is correct -> No action, but `category` and `team_own` have 897 non-null out of 914 rows -> check missing values.
 
 ```
 RangeIndex: 914 entries, 0 to 913
@@ -405,9 +368,7 @@ dtypes: datetime64[ns](1), int64(3), string(3)
 payment_enriched.isnull().sum()
 ```
 
-`category` and `team_own` each miss 17 rows, the other columns are complete.
-
-Result:
+Result: `category` and `team_own` each miss 17 rows, the other columns are complete.
 
 | Column | Missing |
 |---|---|
@@ -426,10 +387,7 @@ miss_payment_enriched = payment_enriched[payment_enriched['category'].isna() | p
 miss_payment_enriched.head()
 ```
 
-- The missing rows are products that exist in the payment report but not in `product.csv` (for example 10033 and 1976).
-- Next step: replace NA with 'Unknown' and keep the rows, because they carry real volume.
-
-Result:
+Result: The missing rows are products in the payment report but not in `product.csv` (for example 10033 and 1976) -> Next step: replace NA with 'Unknown' and keep the rows, because they carry real volume.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -446,9 +404,7 @@ cleaned_payment_enriched = payment_enriched.replace(np.nan, 'Unknown')
 cleaned_payment_enriched.tail()
 ```
 
-Missing values are replaced by 'Unknown', no row is lost.
-
-Result:
+Result: Missing values are replaced by 'Unknown', no row is lost.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -466,9 +422,7 @@ duplicates_payment_enriched = cleaned_payment_enriched[cleaned_payment_enriched.
 duplicates_payment_enriched.head()
 ```
 
-No duplicate values after the merge -> Next step: No action
-
-Result:
+Result: No duplicate values after the merge -> Next step: No action.
 
 ```
 Empty DataFrame
@@ -484,9 +438,7 @@ final_payment_enriched = cleaned_payment_enriched[
 final_payment_enriched.head()
 ```
 
-914 rows, 7 columns, clean.
-
-Result:
+Result: 914 rows and 7 columns, clean.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -505,9 +457,7 @@ transactions = pd.read_csv('transactions.csv', encoding='utf-8')
 transactions.head()
 ```
 
-Preview: `sender_id` and `receiver_id` are floats, and some values are NaN.
-
-Result:
+Result: The first 5 rows load correctly, `sender_id` and `receiver_id` are floats and contain NaN.
 
 | | transaction_id | merchant_id | volume | transType | transStatus | sender_id | receiver_id | extra_info | timeStamp |
 |---|---|---|---|---|---|---|---|---|---|
@@ -523,20 +473,7 @@ Result:
 transactions.info()
 ```
 
-159,689 rows, 9 columns.
-
-Check Dtype
-- `sender_id` is float -> Action: convert to int
-- `receiver_id` is float -> Action: convert to int
-- `extra_info` is object -> Action: convert to string
-
-Check missing values
-- `sender_id`: 5,857 missing -> Action: replace NaN with 0
-- `receiver_id`: 18,531 missing -> Action: replace NaN with 0
-- `extra_info`: only 565 non-null -> Action: ignore
-- The last row is empty in `merchant_id`, `volume`, `transType`, `transStatus`, `timeStamp`. It is kept and becomes an invalid transaction in Part 2.
-
-Result:
+Result: 159,689 rows and 9 columns, `sender_id` and `receiver_id` are float -> convert to int, `extra_info` is object -> convert to string, `sender_id` (5,857 missing) and `receiver_id` (18,531 missing) -> replace NaN with 0, and `extra_info` has only 565 non-null -> ignore.
 
 ```
 RangeIndex: 159689 entries, 0 to 159688
@@ -564,9 +501,7 @@ transactions['extra_info'] = transactions['extra_info'].astype('string')
 transactions.info()
 ```
 
-`sender_id` and `receiver_id` are now int64 with no missing values, `extra_info` is string.
-
-Result:
+Result: `sender_id` and `receiver_id` are now int64 with no missing values, `extra_info` is string.
 
 ```
  #   Column          Non-Null Count   Dtype
@@ -590,9 +525,7 @@ dup_transaction = transactions[transactions.duplicated(subset=['transaction_id']
 dup_transaction.head()
 ```
 
-Primary key `transaction_id` is duplicated, and the rows shown are identical in every column -> Action: drop
-
-Result:
+Result: Primary key `transaction_id` is duplicated and the rows shown are identical in every column -> Action: drop.
 
 | | transaction_id | merchant_id | volume | transType | transStatus | sender_id | receiver_id | extra_info | timeStamp |
 |---|---|---|---|---|---|---|---|---|---|
@@ -609,9 +542,7 @@ no_dup_transactions = transactions.drop_duplicates(subset='transaction_id', igno
 no_dup_transactions.head()
 ```
 
-Duplicate transactions are dropped, one row per `transaction_id`.
-
-Result:
+Result: Duplicate transactions are dropped, one row per `transaction_id`.
 
 | | transaction_id | merchant_id | volume | transType | transStatus | sender_id | receiver_id | extra_info | timeStamp |
 |---|---|---|---|---|---|---|---|---|---|
@@ -630,7 +561,7 @@ Data_wrangling = payment_report.merge(product, on='product_id', how='left')
 Data_wrangling.head()
 ```
 
-Result:
+Result: Every payment row is kept and joined with its `category` and `team_own`.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -640,6 +571,7 @@ Result:
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD |
 
+Note: built from `payment_report` before the duplicate groupby (919 rows). Totals are not affected, because the duplicate keys are summed anyway.
 
 ### 🔥 1. Top 3 product_id with the highest volume
 
@@ -647,7 +579,7 @@ Result:
 Data_wrangling.groupby('product_id')['volume'].sum().sort_values(ascending=False).head(3)
 ```
 
-Result:
+Result: Product 1976 has the highest volume, followed by 429 and 372.
 
 | product_id | volume |
 |---|---|
@@ -671,7 +603,7 @@ Data_wrangling['product_team_own'] = (
 Data_wrangling.head()
 ```
 
-Result:
+Result: The new column `product_team_own` is 1 for the first rows, which follows the rule.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own | product_team_own |
 |---|---|---|---|---|---|---|---|---|
@@ -681,8 +613,6 @@ Result:
 | 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD | 1 |
 | 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD | 1 |
 
-Insight: `product_team_own` counts the distinct teams of each product. The first rows all have 1, which follows the rule.
-
 **Filter products that break the rule**
 
 ```python
@@ -690,7 +620,7 @@ Non_Team = Data_wrangling[Data_wrangling['product_team_own'] != 1].reset_index()
 Non_Team.groupby('product_id')['team_own'].nunique()
 ```
 
-Result:
+Result: Products 3, 1976 and 10033 break the rule, with 0 teams each.
 
 | product_id | nunique team_own |
 |---|---|
@@ -711,7 +641,7 @@ Data_wrangling[Data_wrangling['report_month'] >= '2023-04-01'] \
     .sort_values(ascending=True).head(1)
 ```
 
-Result:
+Result: The smallest team-category pair since Q2.2023 is ASD / PXXXXXP at 300,000.
 
 | team_own | category | volume |
 |---|---|---|
@@ -730,7 +660,7 @@ Data_wrangling[Data_wrangling['payment_group'] == 'refund'] \
     .sort_values(ascending=False).head(1)
 ```
 
-Result:
+Result: Source 38 has the highest refund volume at 36,527,454,759.
 
 | source_id | volume |
 |---|---|
@@ -765,7 +695,7 @@ transactions['Type'] = transactions.apply(transaction_type, axis=1)
 transactions.head()
 ```
 
-Result:
+Result: Each transaction now has a `Type`, and the first rows are Invalid, Payment and Top Up.
 
 | | transaction_id | merchant_id | volume | transType | transStatus | sender_id | receiver_id | extra_info | timeStamp | Type |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -791,7 +721,7 @@ transactions[transactions['Type'] != 'Invalid Transaction'].groupby('Type').agg(
 })
 ```
 
-Result:
+Result: Payment has the most transactions, and Top Up has the highest volume.
 
 | Type | transaction_id | volume | sender_id | receiver_id |
 |---|---|---|---|---|
