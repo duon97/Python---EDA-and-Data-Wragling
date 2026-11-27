@@ -89,7 +89,7 @@ payment_report = pd.read_csv('payment_report.csv', encoding='utf-8')
 payment_report.head()
 ```
 
-Result: The first 5 rows load correctly, and `report_month` is still object (2023-01).
+Result: The first 5 rows load correctly, and `report_month` is still text (2023-01).
 
 | | report_month | payment_group | product_id | source_id | volume |
 |---|---|---|---|---|---|
@@ -438,7 +438,7 @@ final_payment_enriched = cleaned_payment_enriched[
 final_payment_enriched.head()
 ```
 
-Result: 914 rows and 7 columns, clean.
+Result: 914 rows and 7 columns, clean. This is the table used for Part 2.
 
 | | report_month | payment_group | product_id | source_id | volume | category | team_own |
 |---|---|---|---|---|---|---|---|
@@ -554,10 +554,12 @@ Result: Duplicate transactions are dropped, one row per `transaction_id`.
 
 ## 📌 Data Wrangling
 
+Questions 1 to 4 use the cleaned table `final_payment_enriched` from Part 1.
+
 ### 🔥 1. Top 3 product_id with the highest volume
 
 ```python
-Data_wrangling.groupby('product_id')['volume'].sum().sort_values(ascending=False).head(3)
+final_payment_enriched.groupby('product_id')['volume'].sum().sort_values(ascending=False).head(3)
 ```
 
 Result: Product 1976 has the highest volume, followed by 429 and 372.
@@ -575,68 +577,69 @@ Insight:
 
 ### 🔥 2. Given that 1 product_id is owned by only 1 team, are there any abnormal products against this rule?
 
-**Count distinct teams per product**
+**Products with no owner team**
 
 ```python
-Data_wrangling['product_team_own'] = (
-    Data_wrangling.groupby(['product_id','source_id'])['team_own'].transform('nunique')
-)
-Data_wrangling.head()
+final_payment_enriched[final_payment_enriched['team_own'] == 'Unknown']['product_id'].unique()
 ```
 
-Result: The new column `product_team_own` is 1 for the first rows, which follows the rule.
+Result: Products 3, 1976 and 10033 have no owner team.
 
-| | report_month | payment_group | product_id | source_id | volume | category | team_own | product_team_own |
-|---|---|---|---|---|---|---|---|---|
-| 0 | 2023-01-01 | payment | 12 | 45 | 624110375 | PXXXXXT | ASD | 1 |
-| 1 | 2023-01-01 | payment | 17 | 45 | 335715113 | PXXXXXB | ASD | 1 |
-| 2 | 2023-01-01 | payment | 18 | 45 | 737784466 | PXXXXXB | ASD | 1 |
-| 3 | 2023-01-01 | payment | 19 | 45 | 120963069 | PXXXXXM2 | ASD | 1 |
-| 4 | 2023-01-01 | payment | 20 | 45 | 319653158 | PXXXXXB | ASD | 1 |
-
-**Filter products that break the rule**
-
-```python
-Non_Team = Data_wrangling[Data_wrangling['product_team_own'] != 1].reset_index()
-Non_Team.groupby('product_id')['team_own'].nunique()
-```
-
-Result: Products 3, 1976 and 10033 break the rule, with 0 teams each.
-
-| product_id | nunique team_own |
+| product_id | team_own |
 |---|---|
-| 3 | 0 |
-| 1976 | 0 |
-| 10033 | 0 |
+| 3 | Unknown |
+| 1976 | Unknown |
+| 10033 | Unknown |
+
+**Products owned by more than 1 team**
+
+```python
+team_per_product = final_payment_enriched[final_payment_enriched['team_own'] != 'Unknown'] \
+    .groupby('product_id')['team_own'].nunique()
+team_per_product[team_per_product > 1]
+```
+
+Result: No product is owned by more than 1 team.
+
+```
+Series([], Name: team_own, dtype: int64)
+```
 
 Insight:
 - No product is owned by two or more teams. This is expected, because `product_id` is unique in `product.csv`.
-- The abnormal products are 3, 1976 and 10033. Their count is 0 because they have no team at all (they are missing from `product.csv`), not because they have several teams.
-- These are the same rows replaced with 'Unknown' in EDA. The product table should be completed for them.
+- The abnormal products are 3, 1976 and 10033: they have no owner team because they are missing from `product.csv`.
+- These are the same 17 rows replaced with 'Unknown' in EDA. The product table should be completed for them.
 
 ### 🔥 3. Find the team with the lowest performance since Q2.2023, and the category that contributes the least to that team
 
+**Team with the lowest volume**
+
 ```python
-Data_wrangling[Data_wrangling['report_month'] >= '2023-04-01'] \
-    .groupby(['team_own','category'])['volume'].sum() \
-    .sort_values(ascending=True).head(1)
+q2_data = final_payment_enriched[
+    (final_payment_enriched['report_month'] >= '2023-04-01')
+    & (final_payment_enriched['team_own'] != 'Unknown')
+]
+team_volume = q2_data.groupby('team_own')['volume'].sum().sort_values(ascending=True)
+team_volume.head(1)
 ```
 
-Result: The smallest team-category pair since Q2.2023 is ASD / PXXXXXP at 300,000.
+Result: TODO (run the code and paste the output table here)
 
-| team_own | category | volume |
-|---|---|---|
-| ASD | PXXXXXP | 300,000 |
+**Category with the lowest contribution in that team**
 
-Insight:
-- The data ends in April 2023, so "since Q2.2023" covers a single month.
-- The smallest team-category combination is ASD / PXXXXXP at 300,000, a negligible amount next to the monthly volumes of other categories.
-- This query ranks team-category pairs. It does not first sum volume per team to find the weakest team, and rows with no team (`Unknown`) are excluded by the groupby. A team-level total is needed to confirm that ASD is the lowest team.
+```python
+low_team = team_volume.index[0]
+q2_data[q2_data['team_own'] == low_team].groupby('category')['volume'].sum().sort_values(ascending=True).head(1)
+```
+
+Result: TODO (run the code and paste the output table here)
+
+Insight: TODO (write after the results above)
 
 ### 🔥 4. Contribution of source_ids to refund transactions
 
 ```python
-Data_wrangling[Data_wrangling['payment_group'] == 'refund'] \
+final_payment_enriched[final_payment_enriched['payment_group'] == 'refund'] \
     .groupby('source_id')['volume'].sum() \
     .sort_values(ascending=False).head(1)
 ```
@@ -727,7 +730,7 @@ Insight:
 |---|---|---|---|
 | 1 | Q1: Top 3 products | The top 3 products hold about half of total volume. Product 1976 alone is about 34% and 4.2 times the second product, but it is a refund product, so the ranking mixes payment and refund volume. | Rank products on payment volume only and track refund volume separately. Monitor concentration, since a few products drive most of the volume. |
 | 2 | Q2: Product ownership | No product is owned by two teams. The only abnormal products are 3, 1976 and 10033, which have no owner team because they are missing from `product.csv`. | Assign an owner team to these 3 products and keep ownership in one maintained table. Flag any new `product_id` in the payment report that has no product record. |
-| 3 | Q3: Weakest team | In April 2023 the smallest team-category pair is ASD / PXXXXXP at 300,000. The query ranks pairs, not teams, so the weakest team is not confirmed yet. | Sum volume per team first and confirm the weakest team. Then review whether category PXXXXXP needs support or can be dropped. |
+| 3 | Q3: Weakest team | TODO (after running Q3) | TODO (after running Q3) |
 | 4 | Q4: Refund sources | Source 38 holds about 59% of the refund volume of product 1976 (source 37 about 15%, source 39 about 26%). | Investigate source 38 first for refund causes. Track the refund-to-payment ratio per source every month. |
 | 5 | Q5: Transaction types | About 7% of rows (about 11,400) are invalid, because their `transType` is not 2 or 8 (for example 22 and 24) or the row is empty. | Check what `transType` 22 and 24 mean before discarding them. If they are valid types missing from the mapping, their volume is left out of the analysis. |
 | 6 | Q6: Transaction mix | Payment, Transfer Money and Top Up make up 93% of valid transactions. Top Up has the largest volume (37%). | Prioritize the reliability of Top Up, the main funding channel. |
@@ -735,3 +738,5 @@ Insight:
 | 8 | Q6: User behavior | Top Up and Withdraw have identical sender and receiver counts (28,411 and 4,051), which suggests users act on their own wallet. This is a hypothesis. | Verify by checking `sender_id` against `receiver_id`. If confirmed, treat a mismatch in these two types as an anomaly signal for fraud detection. |
 | 9 | Q6: Split Bill | Split Bill has 171 transactions and 0.002% of volume. | Check whether users can find the feature easily. If adoption stays low, deprioritize it. |
 
+
+- Convert `timeStamp` (epoch in milliseconds) to datetime to analyze transactions by day and hour.
