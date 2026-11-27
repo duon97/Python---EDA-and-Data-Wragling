@@ -813,9 +813,17 @@ Result:
 | Transfer Money Transaction | 46710 | 5.098194e+09 | 11853 | 8212 |
 | Withdraw Money Transaction | 4327 | 2.766309e+09 | 4051 | 4051 |
 
-## III. Notes and next steps
+## III. Conclusion
 
-- Rebuild the Part 2 transaction table from `no_dup_transactions` and filter `transStatus` to keep only successful transactions before counting.
-- Question 3: sum volume per team first, then rank the categories inside the lowest team.
-- Add the missing products (3, 1976, 10033) to `product.csv`.
-- Convert `timeStamp` (epoch in milliseconds) to datetime to analyze transactions by day and hour.
+| # | Question | Insight | Recommendation |
+|---|---|---|---|
+| 1 | Q1: Top 3 products | The top 3 products hold about half of total volume. Product 1976 alone is about 34% and 4.2 times the second product, but it is a refund product, so the ranking mixes payment and refund volume. | Rank products on payment volume only and track refund volume separately. Monitor concentration, since a few products drive most of the volume. |
+| 2 | Q2: Product ownership | No product is owned by two teams. The only abnormal products are 3, 1976 and 10033, which have no owner team because they are missing from `product.csv`. | Assign an owner team to these 3 products and keep ownership in one maintained table. Flag any new `product_id` in the payment report that has no product record. |
+| 3 | Q3: Weakest team | In April 2023 the smallest team-category pair is ASD / PXXXXXP at 300,000. The query ranks pairs, not teams, so the weakest team is not confirmed yet. | Sum volume per team first and confirm the weakest team. Then review whether category PXXXXXP needs support or can be dropped. |
+| 4 | Q4: Refund sources | Source 38 holds about 59% of the refund volume of product 1976 (source 37 about 15%, source 39 about 26%). | Investigate source 38 first for refund causes. Track the refund-to-payment ratio per source every month. |
+| 5 | Q5: Transaction types | About 7% of rows (about 11,400) are invalid, because their `transType` is not 2 or 8 (for example 22 and 24) or the row is empty. | Check what `transType` 22 and 24 mean before discarding them. If they are valid types missing from the mapping, their volume is left out of the analysis. |
+| 6 | Q6: Transaction mix | Payment, Transfer Money and Top Up make up 93% of valid transactions. Top Up has the largest volume (37%). | Prioritize the reliability of Top Up, the main funding channel. |
+| 7 | Q6: Bank Transfer | Bank Transfer is 3.5% of transactions but 19.5% of volume, with the highest average value (about 1.44M). | Apply closer monitoring and fraud rules to Bank Transfer, because each transaction is large. |
+| 8 | Q6: User behavior | Top Up and Withdraw have identical sender and receiver counts (28,411 and 4,051), which suggests users act on their own wallet. This is a hypothesis. | Verify by checking `sender_id` against `receiver_id`. If confirmed, treat a mismatch in these two types as an anomaly signal for fraud detection. |
+| 9 | Q6: Split Bill | Split Bill has 171 transactions and 0.002% of volume. | Check whether users can find the feature easily. If adoption stays low, deprioritize it. |
+
